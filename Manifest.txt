@@ -1,0 +1,14 @@
+.autotest
+Guardfile
+History.txt
+Manifest.txt
+README.txt
+Rakefile
+lib/pdf-parser.rb
+lib/pdf/literals.kpeg
+lib/pdf/pdf.kpeg
+test/header_test.rb
+test/helper_methods.rb
+test/number_test.rb
+test/string_test.rb
+

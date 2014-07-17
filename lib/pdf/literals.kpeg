@@ -1,0 +1,24 @@
+%% name = Literal
+
+open_parenthesis = "("
+close_parenthesis = ")"
+parenthesis = open_parenthesis | close_parenthesis
+open_bracket = "["
+close_bracket = "]"
+brackets = open_bracket | close_bracket
+open_brace = "{"
+close_brace = "}"
+braces = open_brace | close_brace
+less_than = "<"
+greater_than = ">"
+forward_slash = "/"
+space = " "
+nl = "\n"
+percent = "%"
+lowercase = /[a-z]/
+uppercase = /[A-Z]/
+dash = "-"
+alpha = lowercase | uppercase
+open_double_angle = less_than less_than
+closed_double_angle = greater_than greater_than
+period = "."

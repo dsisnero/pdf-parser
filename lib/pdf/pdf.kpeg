@@ -1,0 +1,114 @@
+%% name = Parser
+
+%% {
+
+   require_relative "literals.kpeg.rb"
+}
+
+%lit = Literal
+
+%% header = ast Header(version)
+%% namespace = ast Namespace(lang, namespace)
+%% array = ast Array(elements)
+%% name = ast Name(value)
+%% strlit= ast String(value)
+%% dictionary = ast Dictionary(content)
+%% dictionary_pair = ast Map(name,value)
+%% bool_true = ast True()
+%% bool_false = ast False()
+%% xref = ast XRef(offset)
+%% pdf = ast Pdf(header,trailer)
+
+
+
+trailer = "trailer"
+startxref  = "startxref"
+eof = "EOF"
+EOF_MARKER = %lit.percent %lit.percent eof
+open_double_angle = LESS_THAN LESS_THAN
+closed_double_angle = GREATER_THAN_GREATER_THAN
+intconstant   = /([+-]?[1-9][0-9]*)/
+realconstant = /([+-]?[0-9]*\.[0-9]+)/
+
+
+
+
+eol = "\n"
+
+dictionary_content = /(.)*/
+
+sp = %lit.space+
+nl = NL
+minus = %lit.dash
+plus = "+"
+- = %lit.space*
+
+# numbers
+number = integer | float
+integer = < intconstant > { text.to_i}
+digit = /[0-9]/
+float = leading_period_digit | middle_period_digit | trailing_period_digit
+leading_period_digit = - < plus_or_minus %lit.period digit+ > - { text.to_f}
+middle_period_digit = - < plus_or_minus digit+ %lit.period digit+ > - { text.to_f }
+trailing_period_digit = - < %lit.period digit+ > - { text.to_f }
+
+
+# strings
+
+string_escapes = "n" { "\n"}
+	       | "s" { " "}
+	       | "r" { "\r" }
+	       | "t" { "\t" }
+	       | "f" { "\f" }
+	       | "(" { "\("}
+	       | ")" { "\)"}
+	       | "\\" { "\\"}
+	       | < . > { text }
+
+
+
+string = "(" < string_body > ")" { text }
+
+string_body =  < (!close_parenthesis .)* |  escaped_string* > {text}
+string_body = "(" string_body ")"x
+escaped_string = "\\" string_escapes:s { s}
+
+close_parenthesis = ")"
+
+
+
+# escaped_char = "\\" string_escapes:s { s}
+# non_escaped_char =  < !"\\" . > {text}
+# not_parenthesis = < !"(" | !")" .  > { text } 
+# string = "(" (escaped_char | non_escaped_char)*:c ")" { c}
+
+# #character = token("'") (escapedChar | ~('\'') anything)*:c token("'") -> self.builder.exactly(''.join(c))
+
+# #string = token('(') (escapedChar | ~(')') .)*:s ")" -> s.join
+
+
+
+# #string_seq = < /[^\\)"]+/ > { text }
+# #string_body = ("\\" string_escapes:s | string_seq:s)*:ary { Array(ary) }
+
+# #string_def = "(" string_body:s ")" { s.join }
+
+# #string = "(" ( "(" string_body:s  ")" | string_body:s)* ")" 
+	
+# pdfheader = %lit.percent "PDF" %lit.dash float:x  ~header(x)
+
+# pdftrailer = trailer nl dictionary:t_dict nl xref_details:xref EOF_MARKER ~trailer(t_dict,xref)
+
+# dictionary = %lit.open_double_angle sp dictionary_content:x sp closed_double_angle ~dictionary(x)
+
+
+plus_or_minus = ('+' | '-')?
+
+
+
+
+
+
+
+
+root = pdfheader:h trailer:t ~pdf(h,t)
