@@ -1,7 +1,28 @@
-require 'pdf-parser'
+require 'rubygems'
+require 'bundler/setup'
+
+
+#libdir = "#{File.dirname(__FILE__)}/../lib"
+
+#$LOAD_PATH.unshift(libdir) unless $LOAD_PATH.include?(libdir)
+
+require_relative  '../lib/pdf_parser'
+
+require 'minitest/autorun'
 #require 'debugger'
+
+module MiniTest
+
+  class Test
+    include Pdf::NodeHelper
+  end
+
+end
 module MiniTest
   module Assertions
+
+    include Pdf::NodeHelper
+
     def parse (rule, input, sexp)
       parser = Pdf::Parser.new(input)
       # Is the string at least partially acceptable?

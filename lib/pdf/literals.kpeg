@@ -1,5 +1,6 @@
 %% name = Literal
 
+
 open_parenthesis = "("
 close_parenthesis = ")"
 parenthesis = open_parenthesis | close_parenthesis

@@ -1,152 +1,97 @@
-%% name = Parser
+%% name = Pdf::Parser
 
-%% header = ast Header(version)
-%% integer = ast Integer(num)
-%% real = ast Real(num)
-%% namespace = ast Namespace(lang, namespace)
-%% array = ast Array(elements)
-%% name = ast Name(value)
-%% string_literal= ast String(value)
-%% dictionary = ast Dictionary(content)
-%% dictionary_pair = ast Map(name,value)
-%% bool_true = ast True()
-%% bool_false = ast False()
-%% xref = ast XRef(offset)
-%% pdf = ast Pdf(header,trailer)
-%% comment = ast Comment(com)
+%% pre-class {
+  
+}
+   
+%% {
 
+  include Pdf::NodeHelper
 
+}
 
-eol = "\n"
+# %% header = ast Header(version)
+# %% integer = ast Integer(number)
+# %% float = ast Float(number)
+# %% namespace = ast Namespace(lang, namespace)
+# %% array = ast Array(elements)
+# %% name = ast Name(value)
+# %% strlit= ast String(value)
+# %% dictionary = ast Dictionary(content)
+# %% dictionary_pair = ast Map(name,value)
+# %% bool_true = ast True()
+# %% bool_false = ast False()
+# %% xref = ast XRef(offset)
+# %% pdf = ast Pdf(header,trailer)
+# %% comment = ast Comment(text)
 
-dictionary_content = /(.)*/
-
-sp = %lit.space+
-nl = NL
-minus = %lit.dash
-plus = "+"
-- = %lit.space*
-
-
-
-# numbers
-NumericLiteral                  = < DecimalLiteral:literal | HexIntegerLiteral:literal > !(IdentifierStart) { literal }
-
-DecimalLiteral                  = < DecimalIntegerLiteral "." DecimalDigit* ExponentPart? > ~number(text)
-                                | < "." DecimalDigit+ ExponentPart? > ~number(text)
-                                | < DecimalIntegerLiteral ExponentPart? > ~number(text)
-
-DecimalIntegerLiteral           = < "0" | /[1-9]/m DecimalDigit* > ~number(text)
-
-HexIntegerLiteral               = < "0x" HexDigit+ > ~number(text)
-                                | < "0X" HexDigit+ > ~number(text)
-
-DecimalDigit                    = /[0-9]/
-
-ExponentPart                    = /[eE]/ SignedInteger
-
-SignedInteger                   = DecimalDigit+
-                                | "+" DecimalDigit+
-                                | "-" DecimalDigit+
-
-# strings
-
-
-
-
-
-
-
-
-
-root = pdfheader:h trailer:t ~pdf(h,t)
-
-
-# terminals
-
-value = (ref | num | real | key | dict | array | string | hexstr | kword) delim
-array = "[" delim (value)* "]" delim
-string = STRBGN str* STREND
-str = str_element str 
-    | str_element
-str_element = str_a+ str
-	    | str_a+
-	    | "(" str_element ")"
-	    | "(" ")"
-
-str_a= (!STRBGN !STREND !"\\" .) | ESCPAREN | "\\" .
-
-
-obj = delim num num "obj" delim
-    ( ref
-    | dict
-    | num
-    | real
-    | array
-    | key
-    | string
-    | hexstr
-    | kword
-    )* delim
-    'endobj' 
-
-
-stream = delim num num 'obj' delim
-       comment*
-       dict
-       ('stream' (CR LF|LF CR)
-       | 'stream' (CR|LF) (.) 
-       )
-
-
-ref = num num 'R' delim
-xref = 'xref' delim
-     (POSITIVE
-     POSITIVE
-     DELIM
-
-     XREFTAB* delim
-     )+
-
-
-trailer = 'trailer' delim dict delim
-startxref = 'delim' 'startxref' delim num delim
-
-
-
-POSITIVE = 
-EOL = "\r\n" | "\r" | "\n"
-SPACE = " " | "\t" | EOL
-DELIM = (SPACE | EOL)*
-STRBGN = "("
-STREND = ")" DELIM
-ESCPAREN "\\" "("
-	  | "\\" ")"
-	  | 
+PERCENT = "%"
 SP = " "
 CR = "\r"
 LF = "\n"
+TAB = "\t"
+DASH = "-"
+NL = "\n"
+PERIOD = "."
+ZERO = "0"
+ONE_THROUGH_NINE = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+SLASH = "/"
+AMP = "&"
+STAR = "*"
+DIGIT = /[0-9]/
+PLUS = "+"
+EOL = CR LF | CR |  LF
+SPACE = SP | TAB  | EOL
+DELIM = (SPACE | EOL)*
+EOF = !.
+PLUS_OR_MINUS = PLUS | DASH
+COMMENT = PERCENT+  (!EOL .)*  EOL DELIM
 
-COMMENT = "%" + < (!EOL .)* > EOL ~comment(text)
+comment = COMMENT:x ~s(:comment, x)
 
-string = STRBGN str* STREND
+SPACING = (SPACE | COMMENT)*
 
-str = stre str
-    | stre
+FALSE = 'false'
+TRUE = 'true'
+NULL = 'null'
+
+INTEGER = ZERO | ONE_THROUGH_NINE DIGIT*
+
+SIGNED_INTEGER = < PLUS_OR_MINUS? INTEGER > { text}
+
+integer  = SIGNED_INTEGER:i ~s(:integer, i.to_i)
+
+UNSIGNED_FLOAT = < INTEGER* PERIOD DIGIT* > { text }
+
+float = < PLUS_OR_MINUS? UNSIGNED_FLOAT > ~s(:float, text.to_f)
+
+unsigned_float = UNSIGNED_FLOAT:x ~s(:float,x.to_f)
+root = pdfheader:h trailer:t ~pdf(h,t)
+
+header = PERCENT "PDF" DASH UNSIGNED_FLOAT:x  ~s(:header, x.to_f)
 
 
-stre = stra+ str
-     | stra+ 
-     |  < "(" stre ")" > { text }
-     | < "(" ")" > { text }
+# STRING 
+STRBGN = '('
+STREND = ')'
+STR_ESC= '\\'
 
-stra = (!STRBGN | !STREND | !"\\") .
-     | ESCAPE_PAREN
-     | "\\" .
+ESCPAREN = ( STR_ESC STRBGN |
+	 STR_ESC STREND |
+	 STR_ESC STR_ESC
+	 )
+string  = STRBGN STR*:x STREND { x }
+STR = STR_ELEM STR | STR_ELEM
 
-ESCAPE_PAREN = RS "("
-	     | RS ")"
-	     
-String                  = STRBGN < StringCharacter* STREND >  ~string_literal(text)
-                                
+STRING_V = STR_ELEM STR
+	 | STR_ELEM
 
+STR_ELEM = < STR_PARTS+ STR > { text } |
+	 < STR_PARTS+ > { text } |
+	 '(' STR_ELEM:x  ')' { "(#{x})" } |
+	 | STRBGN STREND { '()' }
+	 
+STR_PARTS = ((!STRBGN | !STREND | !STR_ESCAPE .) |
+	  ESCPAREN |
+	  STR_ESC .)
+string_alphabet = 

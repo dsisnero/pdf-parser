@@ -1,8 +1,11 @@
-require 'minitest/unit'
-require 'test/helper_methods'
+require_relative 'test_helper'
 
 
-class StringTest < MiniTest::Unit::TestCase
+class StringTest < MiniTest::Test
+
+  def valid_strings
+    parse :string, "( this is a string )" , s(:string, "this is a string")
+  end
 
   def test_escaped_char
     parse :escaped_string, "\\n", "\n"
